@@ -1,16 +1,10 @@
 import { Worker } from "bullmq";
 import { emailProcessor } from "../processors/email.processor";
 import "dotenv/config";
-
-const redisOptions = {
-  host: new URL(process.env.REDIS_URL as string).hostname,
-  port: parseInt(new URL(process.env.REDIS_URL as string).port),
-  password: new URL(process.env.REDIS_URL as string).password,
-  username: new URL(process.env.REDIS_URL as string).username,
-};
+import { redis } from "../../config/redis";
 
 export const emailWorker = new Worker("emailQueue", emailProcessor, {
-  connection: redisOptions,
+  connection: redis,
 });
 
 emailWorker.on("completed", (job) => {

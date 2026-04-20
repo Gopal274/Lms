@@ -16,7 +16,7 @@ export default function SubscriptionPlans() {
 
   const fetchPlans = async () => {
     try {
-      const { data } = await api.get("/get-active-plans");
+      const { data } = await api.get("subscription/get-active-plans");
       if (data.success) {
         setPlans(data.plans);
       }
@@ -32,7 +32,7 @@ export default function SubscriptionPlans() {
     try {
       // In a real app, you'd trigger Razorpay/Stripe here
       // For now, we'll simulate a successful payment and call the backend
-      const { data } = await api.post("/purchase-subscription", {
+      const { data } = await api.post("subscription/purchase-subscription", {
         planId: plan._id,
         paymentInfo: { method: "simulated", date: new Date() }
       });

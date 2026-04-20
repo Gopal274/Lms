@@ -36,9 +36,11 @@ export default function BatchManagement() {
     price: "",
     duration: "",
     thumbnail: "",
+    whatsappGroupLink: "",
     subjects: []
   });
 
+  const [editingId, setEditingId] = useState(null);
   const [currentSubject, setCurrentSubject] = useState({
     title: "",
     teacherId: "",
@@ -95,6 +97,21 @@ export default function BatchManagement() {
     setNewBatch({ ...newBatch, subjects: updatedSubjects });
   };
 
+  const handleEdit = (batch) => {
+    setEditingId(batch._id);
+    setNewBatch({
+      name: batch.name,
+      description: batch.description,
+      price: batch.price,
+      duration: batch.duration,
+      thumbnail: batch.thumbnail?.url,
+      whatsappGroupLink: batch.whatsappGroupLink || "",
+      subjects: batch.subjects
+    });
+    setShowCreateForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (newBatch.subjects.length === 0) {
@@ -103,14 +120,21 @@ export default function BatchManagement() {
     }
     setIsSubmitting(true);
     try {
-      const { data } = await api.post("/create-batch", newBatch);
-      if (data.success) {
+      let response;
+      if (editingId) {
+        response = await api.put(`/edit-batch/${editingId}`, newBatch);
+      } else {
+        response = await api.post("/create-batch", newBatch);
+      }
+
+      if (response.data.success) {
         setShowCreateForm(false);
+        setEditingId(null);
         fetchData();
-        setNewBatch({ name: "", description: "", price: "", duration: "", thumbnail: "", subjects: [] });
+        setNewBatch({ name: "", description: "", price: "", duration: "", thumbnail: "", whatsappGroupLink: "", subjects: [] });
       }
     } catch (error) {
-      alert("Failed to create batch: " + (error.response?.data?.message || error.message));
+      alert(`Failed to ${editingId ? "update" : "create"} batch: ` + (error.response?.data?.message || error.message));
     } finally {
       setIsSubmitting(false);
     }
@@ -136,7 +160,13 @@ export default function BatchManagement() {
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">Batch Management</h1>
           <p className="text-gray-500">Create and organize student batches with assigned teachers and courses.</p>
         </div>
-        <Button onClick={() => setShowCreateForm(!showCreateForm)}>
+        <Button onClick={() => {
+            if (showCreateForm && editingId) {
+                setEditingId(null);
+                setNewBatch({ name: "", description: "", price: "", duration: "", thumbnail: "", whatsappGroupLink: "", subjects: [] });
+            }
+            setShowCreateForm(!showCreateForm);
+        }}>
           {showCreateForm ? <X className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
           {showCreateForm ? "Cancel" : "Create New Batch"}
         </Button>
@@ -145,8 +175,8 @@ export default function BatchManagement() {
       {showCreateForm && (
         <Card className="animate-in slide-in-from-top-4 border-primary/20 shadow-lg">
           <CardHeader>
-            <CardTitle>Define New Batch</CardTitle>
-            <CardDescription>Fill in the details to launch a new learning cohort.</CardDescription>
+            <CardTitle>{editingId ? "Update Batch" : "Define New Batch"}</CardTitle>
+            <CardDescription>{editingId ? "Modify batch details and subjects." : "Fill in the details to launch a new learning cohort."}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -181,7 +211,15 @@ export default function BatchManagement() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold">Thumbnail</label>
-                  <Input type="file" accept="image/*" onChange={handleThumbnailChange} required />
+                  <Input type="file" accept="image/*" onChange={handleThumbnailChange} required={!editingId} />
+                </div>
+                <div className="space-y-2 col-span-full">
+                  <label className="text-sm font-semibold">WhatsApp Group Link</label>
+                  <Input 
+                    placeholder="https://chat.whatsapp.com/..." 
+                    value={newBatch.whatsappGroupLink}
+                    onChange={e => setNewBatch({...newBatch, whatsappGroupLink: e.target.value})}
+                  />
                 </div>
               </div>
 
@@ -249,7 +287,7 @@ export default function BatchManagement() {
               </div>
 
               <Button className="w-full h-12" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : "Publish Batch"}
+                {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : editingId ? "Update Batch" : "Publish Batch"}
               </Button>
             </form>
           </CardContent>
@@ -274,7 +312,7 @@ export default function BatchManagement() {
                 <div className="flex justify-between items-start mb-2">
                   <CardTitle className="text-xl font-bold text-gray-900">{batch.name}</CardTitle>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(batch)}>
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => handleDelete(batch._id)}>
@@ -297,6 +335,11 @@ export default function BatchManagement() {
                     {batch.duration}
                   </div>
                 </div>
+                {batch.whatsappGroupLink && (
+                  <div className="mt-2 text-[10px] text-green-600 font-bold truncate">
+                    WhatsApp: {batch.whatsappGroupLink}
+                  </div>
+                )}
 
                 <div className="mt-4 pt-4 border-t flex flex-wrap gap-1">
                   {batch.subjects.map((s, idx) => (

@@ -3,13 +3,20 @@ import { Text, View, FlatList, TouchableOpacity, Image, ActivityIndicator, Refre
 import { useAuth } from "../../context/AuthContext";
 import api from "../../utils/api";
 import { useRouter } from "expo-router";
+import { useDownloads } from "../../context/DownloadContext";
+import { Ionicons } from "@expo/vector-icons";
 
 const History = () => {
   const { user, refreshUser } = useAuth();
+  const { downloads, deleteDownload } = useDownloads();
   const [purchasedCourses, setPurchasedCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
+
+  const completedDownloads = Object.keys(downloads || {})
+    .filter(id => downloads[id].status === 'completed')
+    .map(id => ({ id, ...downloads[id] }));
 
   useEffect(() => {
     fetchPurchasedCourses();
@@ -25,7 +32,7 @@ const History = () => {
         // Since user.courses only contains IDs, we fetch details for each
         const coursesData = await Promise.all(
             user.courses.map(async (c) => {
-                const { data } = await api.get(`/get-course/${c.courseId}`);
+                const { data } = await api.get(`course/get-course/${c.courseId}`);
                 return data.course;
             })
         );
@@ -66,7 +73,43 @@ const History = () => {
 
   return (
     <View className="flex-1 bg-gray-50 p-4">
-      <Text className="text-3xl font-bold text-blue-900 mb-6 mt-10">My Courses</Text>
+      <Text className="text-3xl font-bold text-blue-900 mb-6 mt-10">My Learning</Text>
+
+      {completedDownloads.length > 0 && (
+        <View className="mb-8">
+            <View className="flex-row justify-between items-center mb-4 px-1">
+                <Text className="text-xl font-bold text-gray-800">Downloads</Text>
+                <Text className="text-blue-900 font-bold text-xs bg-blue-50 px-3 py-1 rounded-full">{completedDownloads.length} Lessons</Text>
+            </View>
+            <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                data={completedDownloads}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                    <View className="bg-white rounded-[32px] p-5 mr-4 border border-gray-100 shadow-sm w-64">
+                        <View className="flex-row justify-between items-start mb-4">
+                            <View className="bg-blue-900 w-10 h-10 rounded-2xl items-center justify-center">
+                                <Ionicons name="play" size={20} color="white" />
+                            </View>
+                            <TouchableOpacity onPress={() => deleteDownload(item.id)}>
+                                <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                            </TouchableOpacity>
+                        </View>
+                        <Text className="text-lg font-bold text-gray-900 mb-4" numberOfLines={2}>{item.title}</Text>
+                        <TouchableOpacity 
+                            onPress={() => router.push(`/lesson/${item.id}`)}
+                            className="bg-blue-50 p-3 rounded-2xl items-center"
+                        >
+                            <Text className="text-blue-900 font-bold text-xs">Watch Offline</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+            />
+        </View>
+      )}
+
+      <Text className="text-xl font-bold text-gray-800 mb-4 px-1">Enrolled Courses</Text>
 
       {loading ? (
         <ActivityIndicator size="large" color="#1e3a8a" />

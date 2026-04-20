@@ -19,17 +19,17 @@ export const isAuthenticated = catchAsyncError(async (req: Request, res: Respons
     }
 
     if (!access_token) {
-        return next(new ErrorHandler("please login to access this resources", 400));
+        return next(new ErrorHandler("please login to access this resources", 401));
     }
 
     const decoded = jwt.verify(access_token, process.env.ACCESS_TOKEN as string) as JwtPayload;
     
     if (!decoded) {
-        return next(new ErrorHandler("Invalid token, please login again", 400));
+        return next(new ErrorHandler("Invalid token, please login again", 401));
     }
     const user = await redis.get(decoded.id);
     if (!user) {
-        return next(new ErrorHandler("User not found, please login again", 400));
+        return next(new ErrorHandler("User not found, please login again", 401));
     }
     req.user = JSON.parse(user);
     

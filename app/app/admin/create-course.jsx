@@ -47,7 +47,7 @@ export default function CreateCourse() {
         thumbnail: image ? `data:image/jpeg;base64,${image.base64}` : null,
       };
 
-      const { data } = await api.post("/create-course", payload);
+      const { data } = await api.post("course/create-course", payload);
       if (data.success) {
         Alert.alert("Success", "Course created successfully");
         router.replace("/admin/dashboard");

@@ -1,3 +1,70 @@
+                      edtech app
+
+# Physics Wallah (PW) Batch System — Simply Explained - edtech app
+
+## 🏫 What is a "Batch"?
+
+Think of a **batch** like a **classroom section** in a regular school. Just like a school might have "Class 10 - Section A" and "Class 10 - Section B", PW organizes students into batches based on:
+
+- 📚 **Their grade/class** (e.g., Class 11, Class 12)
+- 🎯 **Their goal** (e.g., JEE, NEET, Board exams)
+- 📅 **Their year of exam** (e.g., 2025 droppers, 2026 aspirants)
+
+---
+
+## 🔄 How the System Works (Step by Step)
+
+### 1. 🧑‍🎓 Student Joins a Batch
+- A student picks a batch that matches their goal and class.
+- It's like choosing which "course package" to enroll in.
+- Some batches are **free**, some are **paid**.
+
+### 2. 📹 Live & Recorded Classes
+- Teachers conduct **live classes** at scheduled times (like a real school timetable).
+- If you miss a class, you can watch the **recorded version** later — like a replay on YouTube.
+
+### 3. 📝 Study Material
+- Each batch provides **notes, PDFs, and assignments** — like a school giving you textbooks and homework sheets.
+
+### 4. 🧪 Tests & Quizzes
+- Regular **tests** are conducted inside the batch — just like periodic exams in school.
+- Your score is tracked so you can see your progress.
+
+### 5. 💬 Doubt Solving
+- Students can ask questions — either through **live chat during class** or a **separate doubt section**.
+- Think of it like raising your hand in class or visiting a teacher after school.
+
+---
+
+## 🗂️ Types of Batches (Examples)
+
+| Batch Type | Who it's for |
+|---|---|
+| **Arjuna Batch** | JEE/NEET aspirants (flagship) |
+| **Eklavya Batch** | Board exam focused |
+| **Dropper Batch** | Students repeating the year |
+| **Foundation Batch** | Class 8, 9, 10 students |
+
+---
+
+## 📱 Where Does It Happen?
+
+Everything runs on the **PW App or Website** — it's like a digital school building where:
+- 🚪 You "enter" by logging in
+- 🏛️ Each batch is a "classroom"
+- 📋 Your dashboard shows your schedule, tests, and progress
+
+---
+
+## 🎯 The Big Picture
+
+> **PW Batch System = A complete online school**, where instead of physically going to a building, you open an app — and everything a regular coaching institute offers (classes, notes, tests, teachers) is available on your phone or laptop.
+
+It's designed so that a student in a small town gets the **same quality education** as someone in a big city. That's the core idea behind Physics Wallah.
+
+---
+
+Want me to explain any specific part in more detail — like how the fee structure works, or how live classes are conducted?
 # 🎓 LMS Platform — Complete Project Documentation
 ### PW (Physics Wallah) Clone → Full-Scale EdTech Platform
 

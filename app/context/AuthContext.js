@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const token = await AsyncStorage.getItem("token");
       if (token) {
-        const { data } = await api.get("/me");
+        const { data } = await api.get("user/me");
         if (data.success) {
           setUser(data.user);
           await AsyncStorage.setItem("user", JSON.stringify(data.user));
@@ -40,11 +40,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (email, password) => {
-    const { data } = await api.post("/login", { email, password });
+    const { data } = await api.post("auth/login", { email, password });
     if (data.success) {
       await AsyncStorage.setItem("token", data.accessToken);
       // After login, fetch full user info to get courses etc.
-      const userRes = await api.get("/me");
+      const userRes = await api.get("user/me");
       if (userRes.data.success) {
           setUser(userRes.data.user);
           await AsyncStorage.setItem("user", JSON.stringify(userRes.data.user));
@@ -54,8 +54,8 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
-  const signup = async (name, email, password) => {
-    const { data } = await api.post("/register", { name, email, password });
+  const signup = async (name, email, password, referralCode) => {
+    const { data } = await api.post("auth/register", { name, email, password, referralCode });
     if (data.success) {
       // Store activationToken for verify screen
       await AsyncStorage.setItem("activationToken", data.activationToken);
@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }) => {
 
   const verifyOTP = async (activation_code) => {
     const activation_token = await AsyncStorage.getItem("activationToken");
-    const { data } = await api.post("/activate-user", {
+    const { data } = await api.post("auth/activate-user", {
       activation_token,
       activation_code,
     });

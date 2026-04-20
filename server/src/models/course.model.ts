@@ -42,6 +42,7 @@ interface ICourseData extends Document {
   suggestion: string;
   questions: IComment[];
   quiz: IQuiz[];
+  aiSummary?: string;
 }
 
 interface ICourse extends Document {
@@ -108,6 +109,7 @@ const courseDataSchema = new Schema<ICourseData>({
   suggestion: String,
   questions: [commentSchema],
   quiz: [quizSchema],
+  aiSummary: String,
 });
 
 const courseSchema = new Schema<ICourse>({

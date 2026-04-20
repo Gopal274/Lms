@@ -5,20 +5,25 @@ import { useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useAuth } from "../../context/AuthContext";
 import { usePreventScreenCapture } from 'expo-screen-capture';
+import { useDownloads } from "../../context/DownloadContext";
 
 const { width } = Dimensions.get('window');
 
 export default function LessonView() {
   const { id } = useLocalSearchParams(); // This is Course ID
   const { user } = useAuth();
+  const { downloads, startDownload, deleteDownload } = useDownloads();
   const [content, setContent] = useState([]);
   const [progress, setProgress] = useState([]);
   const [activeVideo, setActiveVideo] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('playlist'); // playlist, doubt, materials, quiz
+  const [activeTab, setActiveTab] = useState('playlist'); // playlist, doubt, materials, quiz, ai
   const [question, setQuestion] = useState("");
   const [isQuestionLoading, setIsQuestionLoading] = useState(false);
-  const [quizResults, setQuizResults] = useState({}); // Track results per question index
+  
+  const [aiSummary, setAiSummary] = useState("");
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [summaryTranscript, setSummaryTranscript] = useState(""); // For teachers to input transcript
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
   const [quizStartTime, setQuizStartTime] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -99,7 +104,7 @@ export default function LessonView() {
       });
 
       try {
-        await api.put("/submit-quiz", {
+        await api.put("course/submit-quiz", {
           courseId: id,
           contentId: currentLesson._id,
           score: correct,
@@ -119,8 +124,10 @@ export default function LessonView() {
   usePreventScreenCapture();
 
   const currentLesson = content[activeVideo];
+  const downloadItem = downloads[currentLesson?._id];
+  const videoSource = downloadItem?.status === 'completed' ? downloadItem.localPath : currentLesson?.videoUrl;
   
-  const player = useVideoPlayer(currentLesson?.videoUrl, (player) => {
+  const player = useVideoPlayer(videoSource, (player) => {
     player.loop = false;
     
     // Find progress for this lesson
@@ -142,7 +149,7 @@ export default function LessonView() {
     const interval = setInterval(async () => {
       if (player && player.playing) {
         try {
-          await api.put("/update-progress", {
+          await api.put("course/update-progress", {
             courseId: id,
             contentId: currentLesson._id,
             timestamp: player.currentTime,
@@ -156,12 +163,45 @@ export default function LessonView() {
     return () => clearInterval(interval);
   }, [currentLesson, player]);
 
+  const handleGenerateSummary = async () => {
+    if (!summaryTranscript.trim()) return;
+    setIsGeneratingSummary(true);
+    try {
+      const { data } = await api.post("course/generate-summary", {
+        courseId: id,
+        lessonId: currentLesson._id,
+        transcript: summaryTranscript,
+      });
+      if (data.success) {
+        setAiSummary(data.summary);
+        setSummaryTranscript("");
+        // Refresh content
+        await fetchContent();
+      }
+    } catch (e) {
+      alert("Failed to generate summary");
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
+  useEffect(() => {
+    if (content[activeVideo]) {
+      setAiSummary(content[activeVideo].aiSummary || "");
+    }
+  }, [activeVideo, content]);
+
   const fetchContent = async () => {
     try {
-      const { data } = await api.get(`/get-course-content/${id}`);
+      const { data } = await api.get(`course/get-course-content/${id}`);
       if (data.success) {
         setContent(data.content);
         setProgress(data.progress || []);
+        
+        // Update AI summary for active video
+        if (data.content[activeVideo]) {
+          setAiSummary(data.content[activeVideo].aiSummary || "");
+        }
       }
     } catch (e) {
       if (user?.subscription?.planTier === 'basic' || user?.subscription?.planTier === 'pro') {
@@ -180,7 +220,7 @@ export default function LessonView() {
     if (!question.trim()) return;
     setIsQuestionLoading(true);
     try {
-      const { data } = await api.put("/add-question", {
+      const { data } = await api.put("course/add-question", {
         question,
         courseId: id,
         contentId: currentLesson._id,
@@ -238,7 +278,7 @@ export default function LessonView() {
 
         {/* Tabs */}
         <View className="flex-row border-b border-gray-100 mb-4">
-          {['playlist', 'doubt', 'materials', 'quiz'].map((tab) => (
+          {['playlist', 'doubt', 'materials', 'quiz', 'ai'].map((tab) => (
             <TouchableOpacity 
               key={tab}
               onPress={() => setActiveTab(tab)}
@@ -246,16 +286,71 @@ export default function LessonView() {
                 activeTab === tab ? "border-blue-900" : "border-transparent"
               }`}
             >
-              <Text className={`font-bold capitalize ${
-                activeTab === tab ? "text-blue-900" : "text-gray-400"
-              }`}>
-                {tab === 'doubt' ? 'Doubt' : tab}
-              </Text>
+              {tab === 'ai' ? (
+                  <View className="flex-row items-center">
+                    <Ionicons name="sparkles" size={16} color={activeTab === 'ai' ? "#1e3a8a" : "#94a3b8"} />
+                    <Text className={`font-bold capitalize ml-1 ${
+                        activeTab === tab ? "text-blue-900" : "text-gray-400"
+                    }`}>AI</Text>
+                  </View>
+              ) : (
+                <Text className={`font-bold capitalize ${
+                    activeTab === tab ? "text-blue-900" : "text-gray-400"
+                }`}>
+                    {tab === 'doubt' ? 'Doubt' : tab}
+                </Text>
+              )}
             </TouchableOpacity>
           ))}
         </View>
 
         <View className="px-4">
+          {activeTab === 'ai' && (
+            <View className="mb-10">
+              <View className="flex-row items-center mb-6">
+                <Ionicons name="sparkles" size={24} color="#1e3a8a" />
+                <Text className="text-2xl font-black text-gray-900 ml-2">AI Lesson Summary</Text>
+              </View>
+
+              {aiSummary ? (
+                <View className="bg-blue-50/50 p-6 rounded-[32px] border border-blue-100 shadow-sm">
+                  <Text className="text-gray-800 text-lg leading-7 font-medium">
+                    {aiSummary}
+                  </Text>
+                </View>
+              ) : (
+                <View className="items-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                  <Ionicons name="document-text-outline" size={48} color="#ccc" />
+                  <Text className="text-gray-400 italic font-bold mt-4">No summary available for this lesson.</Text>
+                </View>
+              )}
+
+              {(user?.role === 'admin' || user?.role === 'teacher') && (
+                <View className="mt-10 bg-gray-50 p-6 rounded-[32px] border border-gray-200">
+                  <Text className="text-gray-900 font-black mb-4 uppercase text-xs tracking-widest">Generate AI Summary (Teacher Only)</Text>
+                  <TextInput
+                    placeholder="Paste lesson transcript here..."
+                    className="bg-white p-4 rounded-2xl h-32 text-top border border-gray-100 mb-4"
+                    multiline
+                    value={summaryTranscript}
+                    onChangeText={setSummaryTranscript}
+                  />
+                  <TouchableOpacity 
+                    onPress={handleGenerateSummary}
+                    disabled={isGeneratingSummary}
+                    className="bg-blue-900 p-4 rounded-2xl items-center shadow-lg"
+                  >
+                    {isGeneratingSummary ? (
+                      <ActivityIndicator color="white" />
+                    ) : (
+                      <Text className="text-white font-bold">Generate Summary</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
+
           {activeTab === 'playlist' && (
             <View>
               {content.map((item, index) => (
@@ -460,6 +555,51 @@ export default function LessonView() {
 
           {activeTab === 'materials' && (
             <View>
+              {/* Offline Video Download Section */}
+              {currentLesson.videoUrl && (
+                <View className="bg-blue-50 p-6 rounded-[32px] mb-6 border border-blue-100 shadow-sm">
+                  <View className="flex-row items-center justify-between mb-4">
+                    <View>
+                      <Text className="text-blue-900 font-black text-lg">Offline Video</Text>
+                      <Text className="text-blue-600/70 text-xs font-medium">Watch without internet later</Text>
+                    </View>
+                    <Ionicons name="cloud-download-outline" size={24} color="#1e3a8a" />
+                  </View>
+
+                  {downloads[currentLesson._id]?.status === 'downloading' ? (
+                    <View>
+                      <View className="h-2 w-full bg-blue-100 rounded-full overflow-hidden mb-2">
+                        <View 
+                          className="h-full bg-blue-900" 
+                          style={{ width: `${(downloads[currentLesson._id].progress * 100).toFixed(0)}%` }}
+                        />
+                      </View>
+                      <Text className="text-blue-900 text-xs font-bold text-center">
+                        Downloading... {(downloads[currentLesson._id].progress * 100).toFixed(0)}%
+                      </Text>
+                    </View>
+                  ) : downloads[currentLesson._id]?.status === 'completed' ? (
+                    <View className="flex-row items-center justify-between bg-white/60 p-3 rounded-2xl border border-blue-200">
+                      <View className="flex-row items-center">
+                        <Ionicons name="checkmark-circle" size={20} color="#059669" />
+                        <Text className="text-green-700 font-bold ml-2">Downloaded</Text>
+                      </View>
+                      <TouchableOpacity onPress={() => deleteDownload(currentLesson._id)}>
+                        <Text className="text-red-500 font-bold text-xs">Delete</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <TouchableOpacity 
+                      onPress={() => startDownload(currentLesson._id, currentLesson.videoUrl, currentLesson.title)}
+                      className="bg-blue-900 p-4 rounded-2xl items-center shadow-md shadow-blue-200"
+                    >
+                      <Text className="text-white font-bold">Download Lesson Video</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+
+              <Text className="text-lg font-bold mb-4 px-2">PDF Resources</Text>
               {(currentLesson.links || []).map((link, i) => (
                 <TouchableOpacity 
                   key={i}
@@ -476,7 +616,7 @@ export default function LessonView() {
                 </TouchableOpacity>
               ))}
               {(!currentLesson.links || currentLesson.links.length === 0) && (
-                <Text className="text-center text-gray-400 py-10">No materials available for this lesson.</Text>
+                <Text className="text-center text-gray-400 py-10">No PDF materials available.</Text>
               )}
             </View>
           )}

@@ -30,7 +30,7 @@ export default function CourseDetail() {
 
   const fetchCourse = async () => {
     try {
-      const { data } = await api.get(`/get-course/${id}`);
+      const { data } = await api.get(`course/get-course/${id}`);
       if (data.success) {
         setCourse(data.course);
       }
@@ -43,7 +43,7 @@ export default function CourseDetail() {
 
   const handleEnrollFree = async () => {
     try {
-        const { data } = await api.post(`/create-order`, {
+        const { data } = await api.post(`payment/create-order`, {
             courseId: id,
             payment_info: { type: "free", status: "success" }
         });
@@ -64,8 +64,8 @@ export default function CourseDetail() {
         return;
     }
     try {
-      const { data: keyData } = await api.get("/razorpay-key");
-      const { data: orderData } = await api.post("/payment", {
+      const { data: keyData } = await api.get("payment/razorpay-key");
+      const { data: orderData } = await api.post("payment/payment", {
         amount: course.price
       });
 
@@ -92,7 +92,7 @@ export default function CourseDetail() {
 
       RazorpayCheckout.open(options).then(async (data) => {
         try {
-          const { data: verifyData } = await api.post("/payment-verification", {
+          const { data: verifyData } = await api.post("payment/payment-verification", {
             razorpay_order_id: data.razorpay_order_id,
             razorpay_payment_id: data.razorpay_payment_id,
             razorpay_signature: data.razorpay_signature,
@@ -119,7 +119,7 @@ export default function CourseDetail() {
     setShowPaymentModal(false);
     try {
       // 1. Create Payment Intent
-      const { data } = await api.post("/payment-stripe", {
+      const { data } = await api.post("payment/payment-stripe", {
         amount: course.price
       });
 
@@ -156,7 +156,7 @@ export default function CourseDetail() {
       }
 
       // 4. Create Order on Backend
-      const { data: orderData } = await api.post("/create-order", {
+      const { data: orderData } = await api.post("payment/create-order", {
         courseId: id,
         payment_info: { type: "stripe", status: "success" },
         payment_type: "stripe"

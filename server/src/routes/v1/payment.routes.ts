@@ -13,9 +13,9 @@ const orderRouter = express.Router();
 
 orderRouter.post("/create-order", isAuthenticated, createOrder);
 
-orderRouter.get("/razorpay-key", isAuthenticated, sendRazorpayPublishableKey);
+orderRouter.get("/razorpay-key", sendRazorpayPublishableKey);
 
-orderRouter.get("/stripe-key", isAuthenticated, sendStripePublishableKey);
+orderRouter.get("/stripe-key", sendStripePublishableKey);
 
 orderRouter.post("/payment", isAuthenticated, newPayment);
 

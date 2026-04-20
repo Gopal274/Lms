@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { catchAsyncError } from "../middlewares/catchAsyncError.middleware";
 import ErrorHandler from "../utils/ErrorHandler";
 import ResourceModel from "../models/resource.model";
+import BatchModel from "../models/batch.model";
 import cloudinary from "cloudinary";
 
 // Upload DPP/Notes/Assignment (Resource)
@@ -48,6 +49,32 @@ export const getResourcesByLesson = catchAsyncError(
     try {
       const { lessonId } = req.params;
       const resources = await ResourceModel.find({ lessonId }).sort({ createdAt: -1 });
+
+      res.status(200).json({
+        success: true,
+        resources,
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);
+
+// Get resources for a batch (all courses in the batch)
+export const getResourcesByBatch = catchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { batchId } = req.params;
+      const batch = await BatchModel.findById(batchId);
+      
+      if (!batch) {
+        return next(new ErrorHandler("Batch not found", 404));
+      }
+
+      const courseIds = batch.subjects.map(s => s.courseId);
+      const resources = await ResourceModel.find({ 
+        courseId: { $in: courseIds } 
+      }).sort({ createdAt: -1 });
 
       res.status(200).json({
         success: true,

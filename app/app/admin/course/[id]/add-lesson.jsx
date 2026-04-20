@@ -19,7 +19,7 @@ export default function AddLesson() {
     setLoading(true);
     try {
       // First fetch current course to get existing courseData
-      const { data: courseData } = await api.get(`/get-course/${id}`);
+      const { data: courseData } = await api.get(`course/get-course/${id}`);
       if (!courseData.success) throw new Error("Failed to fetch course");
 
       const currentCourse = courseData.course;
@@ -35,7 +35,7 @@ export default function AddLesson() {
         questions: []
       });
 
-      const { data } = await api.put(`/edit-course/${id}`, {
+      const { data } = await api.put(`course/edit-course/${id}`, {
         courseData: updatedCourseData
       });
 

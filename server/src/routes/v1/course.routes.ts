@@ -16,6 +16,7 @@ import {
   addLesson,
   deleteLesson,
   getQuizResult,
+  generateLessonSummary,
 } from "../../controllers/course.controller";
 import { authorizeRoles, isAuthenticated } from "../../middlewares/auth.middleware";
 
@@ -59,6 +60,13 @@ courseRouter.put("/update-progress", isAuthenticated, updateCourseProgress);
 courseRouter.put("/submit-quiz", isAuthenticated, submitQuizScore);
 
 courseRouter.get("/get-quiz-result/:courseId/:lessonId", isAuthenticated, getQuizResult);
+
+courseRouter.post(
+  "/generate-summary",
+  isAuthenticated,
+  authorizeRoles("admin", "teacher"),
+  generateLessonSummary
+);
 
 courseRouter.put(
   "/add-reply",

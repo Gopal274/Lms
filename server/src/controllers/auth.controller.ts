@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import userModel from "../models/user.model";
 import type { IUser } from "../models/user.model";
 import ErrorHandler from "../utils/ErrorHandler";
-import { catchAsyncError } from "../middlewares/catchAsyncError.middleware.middleware";
+import { catchAsyncError } from "../middlewares/catchAsyncError.middleware";
 import jwt from "jsonwebtoken";
 import type { Secret } from "jsonwebtoken";
 import ejs from "ejs";
@@ -45,7 +45,7 @@ export const createActivationToken = (user: any): IActivationToken => {
 export const registrationUser = catchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { name, email, password } = req.body;
+      const { name, email, password, referralCode } = req.body;
 
       const isEmailExist = await userModel.findOne({
         email,
@@ -54,10 +54,11 @@ export const registrationUser = catchAsyncError(
         return next(new ErrorHandler("Email already exists", 400));
       }
 
-      const user: IRegistrationBody = {
+      const user: any = {
         name,
         email,
         password,
+        referralCode
       };
       const activationToken = createActivationToken(user);
       const activationCode = activationToken.activationCode;
@@ -92,23 +93,38 @@ export const activateUser = catchAsyncError(
     try {
       const { activation_token, activation_code } =
         req.body as IActivationRequest;
-      const newUser: { user: IUser; activationCode: string } = jwt.verify(
+      const decoded: any = jwt.verify(
         activation_token,
         process.env.ACTIVATION_SECRET as string
-      ) as { user: IUser; activationCode: string };
-      if (newUser.activationCode !== activation_code) {
+      );
+      
+      if (decoded.activationCode !== activation_code) {
         return next(new ErrorHandler("Invalid activation code", 400));
       }
-      const { name, email, password } = newUser.user;
+      
+      const { name, email, password, referralCode } = decoded.user;
+      
       const existUser = await userModel.findOne({ email });
       if (existUser) {
         return next(new ErrorHandler("Email already exists", 400));
       }
+
       const user = await userModel.create({
         name,
         email,
         password,
       });
+
+      if (referralCode) {
+        const referrer = await userModel.findOne({ referralCode });
+        if (referrer) {
+          user.referredBy = referrer._id as string;
+          await user.save();
+          
+          referrer.referralPoints += 100;
+          await referrer.save();
+        }
+      }
 
       res.status(200).json({
         success: true,

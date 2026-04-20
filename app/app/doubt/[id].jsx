@@ -20,7 +20,7 @@ export default function DoubtDetailScreen() {
 
   const fetchDoubtDetails = async () => {
     try {
-      const { data } = await api.get(`/get-doubt/${id}`);
+      const { data } = await api.get(`doubt/get-doubt/${id}`);
       if (data.success) {
         setDoubt(data.doubt);
         setReplies(data.replies);
@@ -36,7 +36,7 @@ export default function DoubtDetailScreen() {
     if (!newReply.trim()) return;
     setIsSubmitting(true);
     try {
-      const { data } = await api.post("/add-doubt-reply", {
+      const { data } = await api.post("doubt/add-doubt-reply", {
         doubtId: id,
         content: newReply
       });

@@ -193,3 +193,139 @@ export const revokeDevice = catchAsyncError(
   }
 );
 
+// follow user
+export const followUser = catchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { followId } = req.body;
+      const userId = req.user?._id as string;
+
+      if (userId === followId) {
+        return next(new ErrorHandler("You cannot follow yourself", 400));
+      }
+
+      const user = await userModel.findById(userId);
+      const followUser = await userModel.findById(followId);
+
+      if (!user || !followUser) {
+        return next(new ErrorHandler("User not found", 404));
+      }
+
+      if (user.following.includes(followId)) {
+        return next(new ErrorHandler("You are already following this user", 400));
+      }
+
+      user.following.push(followId);
+      user.followingCount += 1;
+
+      followUser.followers.push(userId);
+      followUser.followersCount += 1;
+
+      await user.save();
+      await followUser.save();
+
+      res.status(200).json({
+        success: true,
+        message: "User followed successfully",
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);
+
+// unfollow user
+export const unfollowUser = catchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { followId } = req.body;
+      const userId = req.user?._id as string;
+
+      const user = await userModel.findById(userId);
+      const followUser = await userModel.findById(followId);
+
+      if (!user || !followUser) {
+        return next(new ErrorHandler("User not found", 404));
+      }
+
+      if (!user.following.includes(followId)) {
+        return next(new ErrorHandler("You are not following this user", 400));
+      }
+
+      user.following = user.following.filter(id => id !== followId);
+      user.followingCount -= 1;
+
+      followUser.followers = followUser.followers.filter(id => id !== userId);
+      followUser.followersCount -= 1;
+
+      await user.save();
+      await followUser.save();
+
+      res.status(200).json({
+        success: true,
+        message: "User unfollowed successfully",
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);
+
+// update streak
+export const updateStreak = catchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?._id as string;
+      const user = await userModel.findById(userId);
+
+      if (!user) {
+        return next(new ErrorHandler("User not found", 404));
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const lastDate = user.lastStudyDate ? new Date(user.lastStudyDate) : null;
+      if (lastDate) {
+        lastDate.setHours(0, 0, 0, 0);
+      }
+
+      if (lastDate && lastDate.getTime() === today.getTime()) {
+        // Already updated today
+        return res.status(200).json({
+          success: true,
+          streak: user.streak,
+        });
+      }
+
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      if (lastDate && lastDate.getTime() === yesterday.getTime()) {
+        user.streak += 1;
+      } else {
+        user.streak = 1;
+      }
+
+      user.lastStudyDate = today;
+      user.xp += 10; // Award 10 XP for daily study
+
+      // Check for level up
+      const nextLevelXp = user.level * 100;
+      if (user.xp >= nextLevelXp) {
+        user.level += 1;
+      }
+
+      await user.save();
+
+      res.status(200).json({
+        success: true,
+        streak: user.streak,
+        xp: user.xp,
+        level: user.level,
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);

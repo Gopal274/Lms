@@ -12,6 +12,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import sendMail from "../utils/sendMail";
 import { transformToHls } from "../utils/video";
+import { generateVideoSummary } from "../utils/ai";
 
 import NotificationModel from "../models/notification.model";
 
@@ -697,6 +698,40 @@ export const getQuizResult = catchAsyncError(
       res.status(200).json({
         success: true,
         result,
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);
+
+export const generateLessonSummary = catchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { courseId, lessonId, transcript } = req.body;
+
+      if (!transcript) {
+        return next(new ErrorHandler("Please provide a transcript", 400));
+      }
+
+      const summary = await generateVideoSummary(transcript);
+
+      const course = await CourseModel.findById(courseId);
+      if (!course) {
+        return next(new ErrorHandler("Course not found", 404));
+      }
+
+      const lesson = course.courseData.find((item: any) => item._id.toString() === lessonId);
+      if (!lesson) {
+        return next(new ErrorHandler("Lesson not found", 404));
+      }
+
+      lesson.aiSummary = summary || "";
+      await course.save();
+
+      res.status(200).json({
+        success: true,
+        summary,
       });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 500));

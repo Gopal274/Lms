@@ -71,7 +71,7 @@ export default function LiveRoom() {
 
   const fetchSession = async () => {
     try {
-      const { data } = await api.get(`/get-live-sessions-by-id/${id}`);
+      const { data } = await api.get(`teacher/get-live-sessions-by-id/${id}`);
       if (data.success) {
         setSession(data.session);
         setPolls(data.session.polls || []);
@@ -116,7 +116,7 @@ export default function LiveRoom() {
 
         engine.current.enableVideo();
         
-        const { data } = await api.get(`/get-session-token/${id}`);
+        const { data } = await api.get(`teacher/get-session-token/${id}`);
         if (data.success) {
             engine.current.joinChannelWithUserAccount(data.token, sessionData.agoraChannel, user._id, {
                 clientRoleType: ClientRoleType.ClientRoleAudience,
@@ -197,7 +197,7 @@ export default function LiveRoom() {
   const sendQuestion = async () => {
     if (!newQuestion.trim()) return;
     try {
-        const { data } = await api.post("/save-question", {
+        const { data } = await api.post("teacher/save-question", {
             sessionId: id,
             question: newQuestion,
             userName: user.name
@@ -220,7 +220,7 @@ export default function LiveRoom() {
     if (votedPolls[pollId] !== undefined) return;
     
     try {
-      await api.post("/vote-poll", {
+      await api.post("teacher/vote-poll", {
         sessionId: id,
         pollId,
         optionIndex

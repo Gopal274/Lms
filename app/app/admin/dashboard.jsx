@@ -14,7 +14,7 @@ export default function AdminDashboard() {
 
   const fetchCourses = async () => {
     try {
-      const { data } = await api.get("/get-all-courses");
+      const { data } = await api.get("course/get-all-courses");
       if (data.success) {
         setCourses(data.courses);
       }

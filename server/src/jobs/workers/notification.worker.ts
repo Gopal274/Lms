@@ -1,16 +1,10 @@
 import { Worker } from "bullmq";
 import { notificationProcessor } from "../processors/notification.processor";
 import "dotenv/config";
-
-const redisOptions = {
-  host: new URL(process.env.REDIS_URL as string).hostname,
-  port: parseInt(new URL(process.env.REDIS_URL as string).port),
-  password: new URL(process.env.REDIS_URL as string).password,
-  username: new URL(process.env.REDIS_URL as string).username,
-};
+import { redis } from "../../config/redis";
 
 export const notificationWorker = new Worker("notificationQueue", notificationProcessor, {
-  connection: redisOptions,
+  connection: redis,
 });
 
 notificationWorker.on("completed", (job) => {

@@ -37,6 +37,17 @@ export interface IUser extends Document {
     expiryDate: Date;
   };
   pushToken?: string;
+  referralCode: string;
+  referredBy?: string;
+  referralPoints: number;
+  xp: number;
+  level: number;
+  streak: number;
+  lastStudyDate?: Date;
+  followers: string[]; // User IDs
+  following: string[]; // User IDs
+  followersCount: number;
+  followingCount: number;
   comparePassword: (password: string) => Promise<boolean>;
   SignAccessToken: () => string;
   SignRefreshToken: () => string;
@@ -76,7 +87,7 @@ const userSchema: Schema<IUser> = new Schema({
     },
     role: {
         type: String,
-        enum: ["admin", "teacher", "student"],
+        enum: ["admin", "teacher", "student", "parent"],
         default: "student"
     },
     isVerified: {
@@ -121,17 +132,61 @@ const userSchema: Schema<IUser> = new Schema({
     pushToken: {
         type: String,
         default: ""
+    },
+    referralCode: {
+        type: String,
+        unique: true
+    },
+    referredBy: {
+        type: String
+    },
+    referralPoints: {
+        type: Number,
+        default: 0
+    },
+    xp: {
+        type: Number,
+        default: 0
+    },
+    level: {
+        type: Number,
+        default: 1
+    },
+    streak: {
+        type: Number,
+        default: 0
+    },
+    lastStudyDate: Date,
+    followers: [
+        {
+            type: String,
+        }
+    ],
+    following: [
+        {
+            type: String,
+        }
+    ],
+    followersCount: {
+        type: Number,
+        default: 0
+    },
+    followingCount: {
+        type: Number,
+        default: 0
     }
 },{ timestamps: true });
 
         
 // Hash the password before saving the user
 userSchema.pre<IUser>('save', async function() {
-    if (!this.isModified('password')) {
-        return;
+    if (this.isModified('password')) {
+        this.password = await bcrypt.hash(this.password, 10);
     }
-   this.password = await bcrypt.hash(this.password,10); 
-
+    
+    if (!this.referralCode) {
+        this.referralCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+    }
 });
 
 // sign access token   

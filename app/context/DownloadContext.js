@@ -28,13 +28,12 @@ export const DownloadProvider = ({ children }) => {
     await AsyncStorage.setItem("downloads", JSON.stringify(newDownloads));
   };
 
-  const startDownload = async (lessonId, videoUrl) => {
+  const startDownload = async (lessonId, videoUrl, title) => {
     try {
-      // Basic check: Expo FileSystem downloadResumable
       const fileName = `${lessonId}.mp4`;
       const fileUri = `${FileSystem.documentDirectory}${fileName}`;
 
-      await updateDownload(lessonId, { status: "downloading", progress: 0 });
+      await updateDownload(lessonId, { status: "downloading", progress: 0, title });
 
       const downloadResumable = FileSystem.createDownloadResumable(
         videoUrl,
@@ -42,12 +41,16 @@ export const DownloadProvider = ({ children }) => {
         {},
         (downloadProgress) => {
           const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
-          updateDownload(lessonId, { progress });
+          // Use direct state update for UI responsiveness
+          setDownloads(prev => ({
+            ...prev,
+            [lessonId]: { ...prev[lessonId], progress }
+          }));
         }
       );
 
       const { uri } = await downloadResumable.downloadAsync();
-      await updateDownload(lessonId, { status: "completed", progress: 1, localPath: uri });
+      await updateDownload(lessonId, { status: "completed", progress: 1, localPath: uri, title });
       console.log("Download completed", uri);
     } catch (e) {
       console.log("Download failed", e);

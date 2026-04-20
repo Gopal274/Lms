@@ -23,7 +23,7 @@ export default function Resources() {
       // Fetch resources for all batches student belongs to
       const allResources = [];
       for (const batchId of user.batches) {
-        const { data } = await api.get(`/get-resources/${batchId}`);
+        const { data } = await api.get(`teacher/get-resources/${batchId}`);
         if (data.success) {
           allResources.push(...data.resources);
         }

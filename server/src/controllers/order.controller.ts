@@ -176,6 +176,7 @@ async function finalizeOrder(user: any, data: any, mailData: any, itemName: stri
 export const sendRazorpayPublishableKey = catchAsyncError(
   async (req: Request, res: Response) => {
     res.status(200).json({
+      success: true,
       publishableKey: process.env.RAZORPAY_KEY_ID,
     });
   }
@@ -185,6 +186,7 @@ export const sendRazorpayPublishableKey = catchAsyncError(
 export const sendStripePublishableKey = catchAsyncError(
   async (req: Request, res: Response) => {
     res.status(200).json({
+      success: true,
       publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
     });
   }

@@ -5,6 +5,7 @@ import DoubtModel from "../models/doubt.model";
 import DoubtReplyModel from "../models/doubtReply.model";
 import cloudinary from "cloudinary";
 import { broadcastNotification } from "../socketServer";
+import { solveWithAI } from "../utils/ai";
 
 // Create doubt
 export const createDoubt = catchAsyncError(
@@ -156,3 +157,25 @@ export const resolveDoubt = catchAsyncError(
     }
   }
 );
+
+// Solve doubt with AI
+export const solveDoubtAI = catchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { image, text } = req.body;
+      if (!image) {
+        return next(new ErrorHandler("Please provide an image", 400));
+      }
+
+      const solution = await solveWithAI(image, text);
+
+      res.status(200).json({
+        success: true,
+        solution,
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);
+

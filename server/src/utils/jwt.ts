@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import type {Response} from 'express';
 import type {IUser} from '../models/user.model';
-import {redis} from './redis';
+import {redis} from '../config/redis';
 
 interface ITokenOptions {
   expires:Date;

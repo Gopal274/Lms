@@ -1,4 +1,5 @@
-import { Expo, ExpoPushMessage } from "expo-server-sdk";
+import { Expo } from "expo-server-sdk";
+import type { ExpoPushMessage } from "expo-server-sdk";
 import userModel from "../models/user.model";
 
 // Create a new Expo SDK client

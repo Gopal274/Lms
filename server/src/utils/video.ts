@@ -1,4 +1,4 @@
-import cloudinary from "./cloudinary";
+import cloudinary from "../config/cloudinary";
 
 /**
  * Transforms a Cloudinary video URL/ID into a signed HLS (m3u8) streaming URL.

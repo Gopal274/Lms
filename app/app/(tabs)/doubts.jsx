@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Modal, TextInput, Image } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Modal, TextInput, Image, ScrollView } from "react-native";
 import api from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 
 export default function DoubtsScreen() {
   const [doubts, setDoubts] = useState([]);
@@ -15,6 +16,10 @@ export default function DoubtsScreen() {
   const [showModal, setShowModal] = useState(false);
   const [newDoubt, setNewDoubt] = useState({ title: "", description: "", subject: "Physics" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [aiSolution, setAiSolution] = useState("");
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [isSolvingAI, setIsSolvingAI] = useState(false);
 
   useEffect(() => {
     fetchDoubts();
@@ -23,7 +28,7 @@ export default function DoubtsScreen() {
   const fetchDoubts = async () => {
     setLoading(true);
     try {
-      let url = "/get-doubts";
+      let url = "doubt/get-doubts";
       if (filter === "my") url += `?userId=${user._id}`;
       if (filter === "resolved") url += "?status=resolved";
       
@@ -42,7 +47,7 @@ export default function DoubtsScreen() {
     if (!newDoubt.title || !newDoubt.description) return;
     setIsSubmitting(true);
     try {
-      const { data } = await api.post("/create-doubt", newDoubt);
+      const { data } = await api.post("doubt/create-doubt", newDoubt);
       if (data.success) {
         setShowModal(false);
         setNewDoubt({ title: "", description: "", subject: "Physics" });
@@ -52,6 +57,40 @@ export default function DoubtsScreen() {
       alert("Failed to post doubt");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleAISolve = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+        alert('Permission required to access gallery');
+        return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      base64: true,
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      setIsSolvingAI(true);
+      setShowAIModal(true);
+      setAiSolution("");
+      try {
+        const { data } = await api.post("doubt/ai-solve", {
+          image: result.assets[0].base64,
+          text: "Identify and solve the problem in this image."
+        });
+        if (data.success) {
+          setAiSolution(data.solution);
+        }
+      } catch (e) {
+        setAiSolution("AI failed to solve this problem. Please try again with a clearer image.");
+      } finally {
+        setIsSolvingAI(false);
+      }
     }
   };
 
@@ -126,6 +165,42 @@ export default function DoubtsScreen() {
       >
         <Ionicons name="add" size={32} color="white" />
       </TouchableOpacity>
+
+      <TouchableOpacity 
+        onPress={handleAISolve}
+        className="absolute bottom-24 right-6 w-16 h-16 bg-white rounded-full items-center justify-center shadow-xl border border-blue-50"
+      >
+        <Ionicons name="sparkles" size={28} color="#1e3a8a" />
+      </TouchableOpacity>
+
+      <Modal visible={showAIModal} animationType="slide" transparent={true}>
+        <View className="flex-1 justify-end bg-black/50">
+          <View className="bg-white rounded-t-[40px] p-8 h-[80%]">
+            <View className="flex-row justify-between items-center mb-6">
+                <View className="flex-row items-center">
+                    <Ionicons name="sparkles" size={24} color="#1e3a8a" className="mr-2" />
+                    <Text className="text-2xl font-black text-gray-900 ml-2">AI Solution</Text>
+                </View>
+                <TouchableOpacity onPress={() => setShowAIModal(false)}>
+                    <Ionicons name="close" size={24} color="#000" />
+                </TouchableOpacity>
+            </View>
+
+            {isSolvingAI ? (
+                <View className="flex-1 justify-center items-center">
+                    <ActivityIndicator size="large" color="#1e3a8a" />
+                    <Text className="mt-4 text-gray-500 font-bold">AI is analyzing the problem...</Text>
+                </View>
+            ) : (
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <Text className="text-gray-800 text-lg leading-7 pb-10">
+                        {aiSolution}
+                    </Text>
+                </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={showModal} animationType="slide" transparent={true}>
         <View className="flex-1 justify-end bg-black/50">

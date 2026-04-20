@@ -9,6 +9,19 @@ const redisClient =()=>{
   throw new Error("Redis URL is not defined in environment variables");
 }
 
-export const redis = new Redis(redisClient());
+export const redisOptions: any = {
+  maxRetriesPerRequest: null,
+  connectTimeout: 20000,
+};
+
+export const redis = new Redis(redisClient(), redisOptions);
+
+redis.on("error", (err) => {
+  console.error("Redis (Main) Connection Error:", err.message);
+});
+
+redis.on("connect", () => {
+  console.log("Redis (Main) connected successfully");
+});
 
   

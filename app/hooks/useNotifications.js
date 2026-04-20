@@ -5,14 +5,6 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import api from '../utils/api';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
-
 export function useNotifications(isAuthenticated) {
   const [expoPushToken, setExpoPushToken] = useState('');
   const [notification, setNotification] = useState(false);
@@ -20,6 +12,16 @@ export function useNotifications(isAuthenticated) {
   const responseListener = useRef();
 
   useEffect(() => {
+    // Only set the handler if we are not in Expo Go on Android, 
+    // or just accept that it will warn in Expo Go.
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+    });
+
     if (isAuthenticated) {
         registerForPushNotificationsAsync().then(token => {
             if (token) {
@@ -38,14 +40,14 @@ export function useNotifications(isAuthenticated) {
     });
 
     return () => {
-      Notifications.removeNotificationSubscription(notificationListener.current);
-      Notifications.removeNotificationSubscription(responseListener.current);
+      notificationListener.current?.remove();
+      responseListener.current?.remove();
     };
   }, [isAuthenticated]);
 
   const updateTokenOnServer = async (token) => {
     try {
-        await api.put('/notification/update-push-token', { pushToken: token });
+        await api.put('notification/update-push-token', { pushToken: token });
         console.log('Push token synced with server');
     } catch (e) {
         console.log('Failed to sync push token', e);
@@ -72,7 +74,16 @@ async function registerForPushNotificationsAsync() {
     // Project ID is required for Expo Push Notifications
     const projectId = Constants.expoConfig?.extra?.eas?.projectId || Constants.easConfig?.projectId;
     
-    token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    if (!projectId) {
+      console.log('Project ID not found. Please set it in app.json.');
+      return;
+    }
+
+    try {
+      token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    } catch (e) {
+      console.log('Error getting push token', e);
+    }
   } else {
     console.log('Must use physical device for Push Notifications');
   }

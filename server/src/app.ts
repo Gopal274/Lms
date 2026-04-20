@@ -16,6 +16,8 @@ import teacherRouter from "./routes/v1/teacher.routes";
 import subscriptionRouter from "./routes/v1/subscription.routes";
 import doubtRouter from "./routes/v1/doubt.routes";
 import resourceRouter from "./routes/v1/resource.routes";
+import communityRouter from "./routes/v1/community.routes";
+import parentRouter from "./routes/v1/parent.routes";
 import "dotenv/config";
 import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
@@ -62,6 +64,8 @@ app.use("/api/v1/teacher", teacherRouter);
 app.use("/api/v1/subscription", subscriptionRouter);
 app.use("/api/v1/doubt", doubtRouter);
 app.use("/api/v1/resource", resourceRouter);
+app.use("/api/v1/community", communityRouter);
+app.use("/api/v1/parent", parentRouter);
 
 app.get("/test", (req: Request, res: Response) => {
   res.status(200).json({
